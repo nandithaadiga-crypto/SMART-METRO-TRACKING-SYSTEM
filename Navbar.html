@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Smart Metro Tracking System</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="Navbar.css">
+</head>
+
+<body class="bg-gray-100">
+
+<!-- NAVBAR -->
+<nav class="bg-blue-900 text-white p-4 flex justify-between">
+
+<h1 class="text-2xl font-bold">
+🚇 Metro Tracker
+</h1>
+
+<button
+id="themeToggle"
+class="bg-white text-black px-4 py-2 rounded"
+>
+Dark Mode
+</button>
+
+</nav>
+
+<!-- TITLE -->
+
+<h1 class="text-center text-5xl font-bold mt-8 text-blue-900">
+SMART METRO TRACKING SYSTEM
+</h1>
+
+<!-- ROUTE FINDER -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold mb-5">
+Find Route
+</h2>
+
+<input
+id="fromStation"
+placeholder="Source Station"
+class="border p-3 rounded w-full mb-3"
+>
+
+<input
+id="toStation"
+placeholder="Destination Station"
+class="border p-3 rounded w-full mb-3"
+>
+
+<button
+id="findRouteBtn"
+class="bg-green-600 text-white p-3 rounded w-full"
+>
+Find Route
+</button>
+
+<div id="routeResult" class="mt-4"></div>
+
+</section>
+
+<!-- LIVE STATUS -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Live Metro Status
+</h2>
+
+<p class="mt-4">
+Current Station:
+<span id="currentStation"></span>
+</p>
+
+<p>
+Next Station:
+<span id="nextStation"></span>
+</p>
+
+<p>
+ETA:
+<span id="eta"></span>
+</p>
+
+</section>
+
+<!-- TRAINS -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Running Trains
+</h2>
+
+<table class="table-auto w-full mt-4 border">
+
+<thead>
+
+<tr>
+
+<th class="border p-2">Train ID</th>
+<th class="border p-2">Current Station</th>
+<th class="border p-2">Next Station</th>
+
+</tr>
+
+</thead>
+
+<tbody id="trainBody">
+
+</tbody>
+
+</table>
+
+</section>
+
+<!-- FARE -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Fare Calculator
+</h2>
+
+<input
+id="fareFrom"
+placeholder="Source Station"
+class="border p-3 rounded w-full mt-3"
+>
+
+<input
+id="fareTo"
+placeholder="Destination Station"
+class="border p-3 rounded w-full mt-3"
+>
+
+<button
+id="fareBtn"
+class="bg-purple-600 text-white p-3 rounded w-full mt-3"
+>
+Calculate Fare
+</button>
+
+<div id="fareResult" class="mt-4"></div>
+
+</section>
+
+<!-- CROWD PREDICTION -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+AI Crowd Prediction
+</h2>
+
+<input id="crowdStation"
+placeholder="Station"
+class="border p-3 rounded w-full mt-3">
+
+<input id="crowdDay"
+placeholder="Day"
+class="border p-3 rounded w-full mt-3">
+
+<input id="crowdHour"
+placeholder="Hour"
+class="border p-3 rounded w-full mt-3">
+
+<button
+id="predictBtn"
+class="bg-blue-600 text-white p-3 rounded w-full mt-3">
+Predict Crowd
+</button>
+
+<div id="crowdResult" class="mt-4"></div>
+
+</section>
+
+<!-- DELAY PREDICTION -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Delay Prediction
+</h2>
+
+<input
+id="passengers"
+placeholder="Passengers"
+class="border p-3 rounded w-full mt-3">
+
+<input
+id="weather"
+placeholder="Weather (0/1)"
+class="border p-3 rounded w-full mt-3">
+
+<input
+id="peakHour"
+placeholder="Peak Hour (0/1)"
+class="border p-3 rounded w-full mt-3">
+
+<button
+id="delayBtn"
+class="bg-red-600 text-white p-3 rounded w-full mt-3">
+Predict Delay
+</button>
+
+<div id="delayResult" class="mt-4"></div>
+
+</section>
+
+<!-- WEATHER -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Weather
+</h2>
+
+<div id="weatherInfo"></div>
+
+</section>
+
+<!-- ANALYTICS -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Analytics Dashboard
+</h2>
+
+<canvas id="analyticsChart"></canvas>
+
+</section>
+
+<!-- ADMIN -->
+
+<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+
+<h2 class="text-3xl font-bold">
+Admin Dashboard
+</h2>
+
+<div id="adminStats"></div>
+
+</section>
+
+<footer class="bg-blue-900 text-white text-center p-4 mt-10">
+© 2026 Smart Metro Tracking System
+</footer>
+
+<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+<script src="Navbar.js"></script>
+
+</body>
+</html>

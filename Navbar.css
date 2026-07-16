@@ -1,0 +1,114 @@
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f4f4;
+}
+
+/* NAVBAR */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    background: #222;
+    padding: 15px;
+    color: white;
+}
+
+.navbar ul {
+    display: flex;
+    list-style: none;
+    gap: 20px;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+}
+
+/* CARDS */
+.metro-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.card {
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    width: 250px;
+    text-align: center;
+}
+
+.card img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+/* SEARCH */
+.search-box {
+    text-align: center;
+    margin: 20px;
+}
+
+.search-box input {
+    padding: 10px;
+    width: 200px;
+}
+/* DARK MODE */
+body.dark {
+    background-color: #121212;
+    color: white;
+}
+
+body.dark .navbar {
+    background-color: #000;
+}
+
+body.dark .card {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+body.dark .status-box {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+body.dark .search-box input {
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+}
+.route-finder{
+    text-align:center;
+    margin:30px;
+}
+
+.route-finder input{
+    padding:10px;
+    margin:10px;
+    width:220px;
+}
+
+.route-finder button{
+    padding:10px 20px;
+    cursor:pointer;
+}
+
+#routeResult{
+    margin-top:15px;
+    font-weight:bold;
+}
+.train-tracker{
+    text-align:center;
+    margin-top:40px;
+}
+
+.tracker-box{
+    width:300px;
+    margin:auto;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
