@@ -1,25 +1,41 @@
+// ==========================================
+// IMPORTS & CONFIGURATION
+// ==========================================
 const express = require("express");
-const cors = require("cors");
 const http = require("http");
-const { Server } = require("socket.io");
+const path = require("path");
+const cors = require("cors");
 const mongoose = require("mongoose");
+const { Server } = require("socket.io");
 const { spawn } = require("child_process");
 const axios = require("axios");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+// Local Modules & Middleware
+const User = require("./models/User");
+const auth = require("./middleware/auth");
+
+const SECRET_KEY = process.env.JWT_SECRET || "smartmetro123";
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 const server = http.createServer(app);
 
-// ==========================
-// DATABASE
-// ==========================
+// Express Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
 
+// ==========================================
+// DATABASE CONNECTION & SCHEMAS
+// ==========================================
 mongoose
     .connect("mongodb://127.0.0.1:27017/metrodb")
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch((err) => console.error("MongoDB Connection Error:", err));
 
 // Prediction Schema
-
 const predictionSchema = new mongoose.Schema({
     station: String,
     crowd: String,
@@ -29,15 +45,11 @@ const predictionSchema = new mongoose.Schema({
     }
 });
 
-const Prediction = mongoose.model(
-    "Prediction",
-    predictionSchema
-);
+const Prediction = mongoose.model("Prediction", predictionSchema);
 
-// ==========================
-// SOCKET.IO
-// ==========================
-
+// ==========================================
+// SOCKET.IO & REAL-TIME TRAIN TRACKING
+// ==========================================
 const io = new Server(server, {
     cors: {
         origin: "*"
@@ -46,395 +58,309 @@ const io = new Server(server, {
 
 console.log("Socket.IO initialized");
 
-app.use(cors());
-app.use(express.json());
+io.on("connection", (socket) => {
+    console.log("Client Connected:", socket.id);
 
-// ==========================
-// METRO ROUTES
-// ==========================
+    socket.on("disconnect", () => {
+        console.log("Client Disconnected:", socket.id);
+    });
+});
 
+// ==========================================
+// METRO DATA & ROUTING CONFIGURATION
+// ==========================================
 const metroRoutes = {
-    purple: [
-        "majestic",
-        "indiranagar",
-        "whitefield"
-    ],
-    green: [
-        "nagasandra",
-        "majestic",
-        "yelahanka"
-    ],
-    yellow: [
-        "rv road",
-        "central college",
-        "bommasandra"
-    ]
+    purple: ["majestic", "indiranagar", "whitefield"],
+    green: ["nagasandra", "majestic", "yelahanka"],
+    yellow: ["rv road", "central college", "bommasandra"]
 };
 
-// ==========================
-// STATIONS & TRAINS
-// ==========================
-
-const stations = [
-    "majestic",
-    "indiranagar",
-    "whitefield"
-];
-
+const stations = ["majestic", "indiranagar", "whitefield"];
 let currentIndex = 0;
 
 const trains = [
-    {
-        id: "P101",
-        currentIndex: 0
-    },
-    {
-        id: "P102",
-        currentIndex: 1
-    },
-    {
-        id: "P103",
-        currentIndex: 2
-    }
+    { id: "P101", lat: 12.9763, lng: 77.5712, speed: 40, currentIndex: 0 },
+    { id: "P102", lat: 12.9800, lng: 77.5800, speed: 38, currentIndex: 1 },
+    { id: "P103", lat: 12.9720, lng: 77.5650, speed: 45, currentIndex: 2 }
 ];
 
-// ==========================
-// SOCKET CONNECTION
-// ==========================
+// Periodically update live location & broadcast to connected clients
+setInterval(() => {
+    trains.forEach((train) => {
+    train.lat += 0.0002;
+    train.lng += 0.00015;
 
-io.on("connection", socket => {
+    train.currentIndex =
+        (train.currentIndex + 1) % stations.length;
+});
 
-    console.log("User Connected");
+    // Broadcast live locations and station updates
+    io.emit("liveLocation", trains);
+    
+    io.emit("metroUpdate",{
 
-    socket.on("disconnect", () => {
+currentStation:stations[currentIndex],
 
-        console.log("User Disconnected");
+nextStation:stations[(currentIndex+1)%stations.length],
 
-    });
+eta:Math.floor(Math.random()*5)+1,
+
+lat:trains[0].lat,
+
+lng:trains[0].lng
 
 });
 
-// ==========================
-// LIVE METRO MOVEMENT
-// ==========================
+    // Advance station index periodically
+    currentIndex = (currentIndex + 1) % stations.length;
+}, 3000);
 
-setInterval(() => {
+// ==========================================
+// API ENDPOINTS
+// ==========================================
 
-    currentIndex =
-        (currentIndex + 1) %
-        stations.length;
-
-    trains.forEach(train => {
-
-        train.currentIndex =
-            (train.currentIndex + 1) %
-            stations.length;
-
-    });
-
-    io.emit("metroUpdate", {
-
-        currentStation:
-            stations[currentIndex],
-
-        nextStation:
-            stations[
-                (currentIndex + 1) %
-                stations.length
-            ],
-
-        eta:
-            Math.floor(Math.random() * 5) + 1
-
-    });
-
-}, 5000);
-
-// ==========================
-// ROUTE FINDER
-// ==========================
-
+// 1. ROUTE FINDER
 app.post("/route", (req, res) => {
-
     let { from, to } = req.body;
 
     if (!from || !to) {
-
-        return res.json({
-            error: "Missing stations"
-        });
-
+        return res.status(400).json({ error: "Missing source or destination stations" });
     }
 
-    from = from.toLowerCase();
-    to = to.toLowerCase();
+    from = from.toLowerCase().trim();
+    to = to.toLowerCase().trim();
 
     for (let line in metroRoutes) {
+        const routeStations = metroRoutes[line];
 
-        const routeStations =
-            metroRoutes[line];
+        if (routeStations.includes(from) && routeStations.includes(to)) {
+            const start = routeStations.indexOf(from);
+            const end = routeStations.indexOf(to);
+            const route = routeStations.slice(
+                Math.min(start, end),
+                Math.max(start, end) + 1
+            );
 
-        if (
-            routeStations.includes(from) &&
-            routeStations.includes(to)
-        ) {
-
-            const start =
-                routeStations.indexOf(from);
-
-            const end =
-                routeStations.indexOf(to);
-
-            const route =
-                routeStations.slice(
-                    Math.min(start, end),
-                    Math.max(start, end) + 1
-                );
-
-            return res.json({
-                line,
-                route
-            });
-
+            return res.json({ line, route });
         }
-
     }
 
-    res.json({
-        error: "No direct route found"
-    });
-
+    res.json({ error: "No direct route found" });
 });
 
-// ==========================
-// LIVE STATUS
-// ==========================
-
+// 2. LIVE STATUS
 app.get("/live-status", (req, res) => {
-
     res.json({
-
-        currentStation:
-            stations[currentIndex],
-
-        nextStation:
-            stations[
-                (currentIndex + 1) %
-                stations.length
-            ],
-
-        eta:
-            Math.floor(Math.random() * 5) + 1
-
+        currentStation: stations[currentIndex],
+        nextStation: stations[(currentIndex + 1) % stations.length],
+        eta: Math.floor(Math.random() * 5) + 1
     });
-
 });
 
-// ==========================
-// TRAINS
-// ==========================
-
+// 3. RUNNING TRAINS
 app.get("/trains", (req, res) => {
-
-    console.log("Trains route called");
-
-    const trainData = trains.map(train => ({
+    const trainData = trains.map((train) => ({
         id: train.id,
-        currentStation: stations[train.currentIndex],
-        nextStation: stations[(train.currentIndex + 1) % stations.length]
+        currentStation: stations[train.currentIndex ?? 0],
+        nextStation: stations[((train.currentIndex ?? 0) + 1) % stations.length]
     }));
 
-    console.log(trainData);
-
     res.json(trainData);
-
-    console.log("Response sent");
-
 });
-// ==========================
-// FARE CALCULATOR
-// ==========================
 
+// 4. FARE CALCULATOR
 app.post("/fare", (req, res) => {
-
     let { from, to } = req.body;
 
-    from = from.toLowerCase();
-    to = to.toLowerCase();
-
-    const route =
-        metroRoutes.purple;
-
-    const start =
-        route.indexOf(from);
-
-    const end =
-        route.indexOf(to);
-
-    if (start === -1 || end === -1) {
-
-        return res.json({
-            error: "Invalid station"
-        });
-
+    if (!from || !to) {
+        return res.status(400).json({ error: "Missing source or destination station" });
     }
 
-    const fare =
-        Math.abs(end - start) * 10;
+    from = from.toLowerCase().trim();
+    to = to.toLowerCase().trim();
 
+    let route = null;
+
+for(let line in metroRoutes){
+
+    if(
+        metroRoutes[line].includes(from) &&
+        metroRoutes[line].includes(to)
+    ){
+        route = metroRoutes[line];
+        break;
+    }
+
+}
+
+if(!route){
+
+    return res.json({
+        error:"No route found"
+    });
+
+}
+    const start = route.indexOf(from);
+    const end = route.indexOf(to);
+
+    if (start === -1 || end === -1) {
+        return res.status(400).json({ error: "Invalid station entered" });
+    }
+
+    const fare = Math.abs(end - start) * 10;
     res.json({ fare });
-
 });
 
-// ==========================
-// CROWD PREDICTION
-// ==========================
-
+// 5. CROWD PREDICTION (AI Integration)
 app.post("/predictCrowd", (req, res) => {
-
-    console.log("PredictCrowd API called");
-    console.log(req.body);
-
     const { station, day, hour } = req.body;
 
-    const python = spawn("python", [
-        "AI/predict.py",
-        station,
-        day,
-        hour
-    ]);
+    if (!station || !day || !hour) {
+        return res.status(400).json({ error: "Station, day, and hour are required" });
+    }
 
+    const python = spawn("python", ["AI/predict.py", station, day, hour]);
     let result = "";
 
     python.stdout.on("data", (data) => {
-        console.log("Python Output:", data.toString());
         result += data.toString();
     });
 
     python.stderr.on("data", (data) => {
-        console.log("Python Error:", data.toString());
+        console.error("Python Crowd Prediction Error:", data.toString());
     });
 
-    python.on("close", (code) => {
-        console.log("Python exited with code:", code);
-        console.log("Sending:", result.trim());
+    python.on("close", async () => {
+        const crowdResult = result.trim() || "medium";
 
-        res.json({
-            crowd: result.trim()
-        });
+        try {
+            const newPrediction = new Prediction({
+                station,
+                crowd: crowdResult
+            });
+            await newPrediction.save();
+        } catch (err) {
+            console.error("Failed to save prediction to DB:", err);
+        }
+
+        res.json({ crowd: crowdResult });
     });
-
 });
-// ==========================
-// DELAY PREDICTION
-// ==========================
 
-// ==========================
-// DELAY PREDICTION
-// ==========================
-
+// 6. DELAY PREDICTION (AI Integration)
 app.post("/predictDelay", (req, res) => {
-
     const { passengers, weather, peakHour } = req.body;
 
     const python = spawn("python", [
         "AI/predict_delay.py",
-        passengers.toString(),
-        weather.toString(),
-        peakHour.toString()
+        (passengers || 0).toString(),
+        (weather || 0).toString(),
+        (peakHour || 0).toString()
     ]);
 
     let result = "";
 
     python.stdout.on("data", (data) => {
-        console.log("Python Output:", data.toString());
         result += data.toString();
     });
 
     python.stderr.on("data", (data) => {
-        console.error("Python Error:", data.toString());
+        console.error("Python Delay Prediction Error:", data.toString());
     });
 
-    python.on("close", (code) => {
-
-    console.log("Python exited with code:", code);
-    console.log("Sending Delay:", result.trim());
-
-    res.json({
-        delay: result.trim()
+    python.on("close", () => {
+        res.json({ delay: result.trim() || "0" });
     });
-
-});
 });
 
-// ==========================
-// WEATHER
-// ==========================
-
+// 7. WEATHER API
 app.get("/weather", async (req, res) => {
-
     try {
-
-        const response =
-            await axios.get(
-                "https://api.open-meteo.com/v1/forecast?latitude=12.97&longitude=77.59&current_weather=true"
-            );
-
-        res.json(
-            response.data
+        const response = await axios.get(
+            "https://api.open-meteo.com/v1/forecast?latitude=12.97&longitude=77.59&current_weather=true"
         );
-
+        res.json(response.data);
     } catch (err) {
-
-        res.status(500).json({
-            error: err.message
-        });
-
+        res.status(500).json({ error: err.message });
     }
-
 });
 
-// ==========================
-// ANALYTICS
-// ==========================
-
-app.get("/analytics", async (req, res) => {
-
-    const data =
-        await Prediction.find();
-
-    res.json(data);
-
-});
-
-// ==========================
-// ADMIN STATS
-// ==========================
-
+// 8. ADMIN STATS
 app.get("/adminStats", async (req, res) => {
-
-    const totalPredictions =
-        await Prediction.countDocuments();
-
-    res.json({
-
-        totalPredictions,
-
-        activeTrains:
-            trains.length
-
-    });
-
+    try {
+        const totalPredictions = await Prediction.countDocuments();
+        res.json({
+            totalPredictions,
+            activeTrains: trains.length
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// ==========================
+// 9. AUTHENTICATION: REGISTER
+app.post("/register", async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ message: "User already exists" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ name, email, password: hashedPassword });
+
+        await user.save();
+        res.status(201).json({ message: "Registration Successful" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 10. AUTHENTICATION: LOGIN
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "User not found" });
+        }
+
+        const valid = await bcrypt.compare(password, user.password);
+        if (!valid) {
+            return res.status(400).json({ message: "Wrong Password" });
+        }
+
+        const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: "1d" });
+        res.json({ token, message: "Login Successful" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 11. PROTECTED ANALYTICS ENDPOINT
+app.get("/analytics", auth, async (req, res) => {
+    try {
+        const data = await Prediction.find();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==========================================
 // START SERVER
-// ==========================
-
-server.listen(3000, () => {
-
-    console.log(
-        "Server running on port 3000"
-    );
-
+// ==========================================
+server.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });

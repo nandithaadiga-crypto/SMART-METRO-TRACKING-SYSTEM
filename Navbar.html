@@ -1,263 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Metro Tracking System</title>
 
-<title>Smart Metro Tracking System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<link rel="stylesheet" href="Navbar.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="Navbar.css">
 </head>
 
-<body class="bg-gray-100">
-
-<!-- NAVBAR -->
-<nav class="bg-blue-900 text-white p-4 flex justify-between">
-
-<h1 class="text-2xl font-bold">
-🚇 Metro Tracker
-</h1>
-
-<button
-id="themeToggle"
-class="bg-white text-black px-4 py-2 rounded"
->
-Dark Mode
-</button>
-
-</nav>
-
-<!-- TITLE -->
-
-<h1 class="text-center text-5xl font-bold mt-8 text-blue-900">
-SMART METRO TRACKING SYSTEM
-</h1>
-
-<!-- ROUTE FINDER -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold mb-5">
-Find Route
-</h2>
-
-<input
-id="fromStation"
-placeholder="Source Station"
-class="border p-3 rounded w-full mb-3"
->
-
-<input
-id="toStation"
-placeholder="Destination Station"
-class="border p-3 rounded w-full mb-3"
->
-
-<button
-id="findRouteBtn"
-class="bg-green-600 text-white p-3 rounded w-full"
->
-Find Route
-</button>
-
-<div id="routeResult" class="mt-4"></div>
-
-</section>
-
-<!-- LIVE STATUS -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Live Metro Status
-</h2>
-
-<p class="mt-4">
-Current Station:
-<span id="currentStation"></span>
-</p>
-
-<p>
-Next Station:
-<span id="nextStation"></span>
-</p>
-
-<p>
-ETA:
-<span id="eta"></span>
-</p>
-
-</section>
-
-<!-- TRAINS -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Running Trains
-</h2>
-
-<table class="table-auto w-full mt-4 border">
-
-<thead>
-
-<tr>
-
-<th class="border p-2">Train ID</th>
-<th class="border p-2">Current Station</th>
-<th class="border p-2">Next Station</th>
-
-</tr>
-
-</thead>
-
-<tbody id="trainBody">
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- FARE -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Fare Calculator
-</h2>
-
-<input
-id="fareFrom"
-placeholder="Source Station"
-class="border p-3 rounded w-full mt-3"
->
-
-<input
-id="fareTo"
-placeholder="Destination Station"
-class="border p-3 rounded w-full mt-3"
->
-
-<button
-id="fareBtn"
-class="bg-purple-600 text-white p-3 rounded w-full mt-3"
->
-Calculate Fare
-</button>
-
-<div id="fareResult" class="mt-4"></div>
-
-</section>
-
-<!-- CROWD PREDICTION -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-AI Crowd Prediction
-</h2>
-
-<input id="crowdStation"
-placeholder="Station"
-class="border p-3 rounded w-full mt-3">
-
-<input id="crowdDay"
-placeholder="Day"
-class="border p-3 rounded w-full mt-3">
-
-<input id="crowdHour"
-placeholder="Hour"
-class="border p-3 rounded w-full mt-3">
-
-<button
-id="predictBtn"
-class="bg-blue-600 text-white p-3 rounded w-full mt-3">
-Predict Crowd
-</button>
-
-<div id="crowdResult" class="mt-4"></div>
-
-</section>
-
-<!-- DELAY PREDICTION -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Delay Prediction
-</h2>
-
-<input
-id="passengers"
-placeholder="Passengers"
-class="border p-3 rounded w-full mt-3">
-
-<input
-id="weather"
-placeholder="Weather (0/1)"
-class="border p-3 rounded w-full mt-3">
-
-<input
-id="peakHour"
-placeholder="Peak Hour (0/1)"
-class="border p-3 rounded w-full mt-3">
-
-<button
-id="delayBtn"
-class="bg-red-600 text-white p-3 rounded w-full mt-3">
-Predict Delay
-</button>
-
-<div id="delayResult" class="mt-4"></div>
-
-</section>
-
-<!-- WEATHER -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Weather
-</h2>
-
-<div id="weatherInfo"></div>
-
-</section>
-
-<!-- ANALYTICS -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Analytics Dashboard
-</h2>
-
-<canvas id="analyticsChart"></canvas>
-
-</section>
-
-<!-- ADMIN -->
-
-<section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
-
-<h2 class="text-3xl font-bold">
-Admin Dashboard
-</h2>
-
-<div id="adminStats"></div>
-
-</section>
-
-<footer class="bg-blue-900 text-white text-center p-4 mt-10">
-© 2026 Smart Metro Tracking System
-</footer>
-
-<script src="http://localhost:3000/socket.io/socket.io.js"></script>
-<script src="Navbar.js"></script>
-
+<body class="bg-gray-100 text-gray-800 transition-colors duration-300">
+
+    <!-- NAVBAR -->
+    <nav class="bg-blue-900 text-white p-4 flex justify-between items-center shadow-lg">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+            🚇 Metro Tracker
+        </h1>
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="bg-white text-black px-4 py-2 rounded font-medium shadow hover:bg-gray-200 transition">
+                🌙 Dark Mode
+            </button>
+            <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded font-medium hover:bg-red-700 transition">
+                Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="container mx-auto px-4 pb-12">
+
+        <!-- TITLE -->
+        <h1 class="text-center text-4xl md:text-5xl font-extrabold mt-8 text-blue-900 uppercase tracking-wide">
+            Smart Metro Tracking System
+        </h1>
+
+        <!-- ROUTE FINDER -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-5 text-gray-800">Find Route</h2>
+            <input id="fromStation" placeholder="Source Station" class="border p-3 rounded w-full mb-3 focus:outline-blue-500">
+            <input id="toStation" placeholder="Destination Station" class="border p-3 rounded w-full mb-3 focus:outline-blue-500">
+            <button id="findRouteBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold p-3 rounded w-full transition">
+                Find Route
+            </button>
+            <div id="routeResult" class="mt-4 font-semibold text-gray-700"></div>
+        </section>
+
+        <!-- LIVE METRO MAP -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-5 text-gray-800">Live Metro Map</h2>
+            <h3 id="speed" class="text-lg font-semibold text-gray-600 mb-2"></h3>
+            <div id="map" class="rounded-lg shadow border" style="height: 400px;"></div>
+            <p id="location" class="mt-2 text-sm text-gray-500"></p>
+        </section>
+
+        <!-- LIVE METRO STATUS -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-4 text-gray-800">Live Status</h2>
+            <div class="space-y-2 text-lg">
+                <p>Current Station: <span id="currentStation" class="font-bold text-blue-600">--</span></p>
+                <p>Next Station: <span id="nextStation" class="font-bold text-blue-600">--</span></p>
+                <p>ETA: <span id="eta" class="font-bold text-green-600">--</span></p>
+            </div>
+        </section>
+
+        <!-- RUNNING TRAINS -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-4 text-gray-800">Running Trains</h2>
+            <div class="overflow-x-auto">
+                <table class="table-auto w-full border-collapse border border-gray-300 mt-2">
+                    <thead>
+                        <tr class="bg-blue-100 text-gray-700">
+                            <th class="border border-gray-300 p-3 text-left">Train ID</th>
+                            <th class="border border-gray-300 p-3 text-left">Current Station</th>
+                            <th class="border border-gray-300 p-3 text-left">Next Station</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trainBody">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FARE CALCULATOR -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold text-gray-800">Fare Calculator</h2>
+            <input id="fareFrom" placeholder="Source Station" class="border p-3 rounded w-full mt-3 focus:outline-purple-500">
+            <input id="fareTo" placeholder="Destination Station" class="border p-3 rounded w-full mt-3 focus:outline-purple-500">
+            <button id="fareBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold p-3 rounded w-full mt-3 transition">
+                Calculate Fare
+            </button>
+            <div id="fareResult" class="mt-4 font-bold text-lg text-purple-900"></div>
+        </section>
+
+        <!-- AI CROWD PREDICTION -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold text-gray-800">AI Crowd Prediction</h2>
+            <input id="crowdStation" placeholder="Station" class="border p-3 rounded w-full mt-3">
+            <input id="crowdDay" placeholder="Day (e.g. Monday)" class="border p-3 rounded w-full mt-3">
+            <input id="crowdHour" placeholder="Hour (e.g. 18 for 6 PM)" class="border p-3 rounded w-full mt-3">
+            <button id="predictBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded w-full mt-3 transition">
+                Predict Crowd
+            </button>
+            <div id="crowdResult" class="mt-4 font-semibold text-gray-700"></div>
+        </section>
+
+        <!-- DELAY PREDICTION -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold text-gray-800">Delay Prediction</h2>
+            <input id="passengers" placeholder="Passengers count" class="border p-3 rounded w-full mt-3">
+            <input id="weather" placeholder="Weather (0: Clear, 1: Rain)" class="border p-3 rounded w-full mt-3">
+            <input id="peakHour" placeholder="Peak Hour (0: No, 1: Yes)" class="border p-3 rounded w-full mt-3">
+            <button id="delayBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded w-full mt-3 transition">
+                Predict Delay
+            </button>
+            <div id="delayResult" class="mt-4 font-semibold text-red-700"></div>
+        </section>
+
+        <!-- WEATHER -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Weather Info</h2>
+            <div id="weatherInfo" class="text-lg font-medium text-gray-700">Loading weather...</div>
+        </section>
+
+        <!-- ANALYTICS DASHBOARD -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-4xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-5 text-gray-800">Analytics Dashboard</h2>
+            <div class="max-w-md mx-auto">
+                <canvas id="analyticsChart"></canvas>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section class="bg-white p-8 rounded-xl shadow-xl max-w-2xl mx-auto mt-10">
+            <h2 class="text-3xl font-bold mb-3 text-gray-800">Admin Dashboard</h2>
+            <div id="adminStats" class="space-y-2 text-gray-700">Loading stats...</div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-blue-900 text-white text-center p-4">
+        © 2026 Smart Metro Tracking System
+    </footer>
+
+    <!-- EXTERNAL LIBRARIES -->
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- APPLICATION SCRIPTS -->
+    <script src="Navbar.js"></script>
+    
 </body>
 </html>
